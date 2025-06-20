@@ -1,8 +1,8 @@
 import express from 'express';
-import { test } from '../cotrollers/user.controller.js';
+import { test } from '../controlers/user.controller.js';
 
 const router = express.Router();
 
-router.get('/test', test);
+router.get('/home_bliss', test);
 
 export default router;

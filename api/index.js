@@ -2,8 +2,10 @@ import express from "express"
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import userRouter from './routes/user.route.js';
+import userSignUpRouter from './routes/signup.route.js';
 
 dotenv.config();
+
 
 mongoose
     .connect(process.env.MONGO)
@@ -15,8 +17,10 @@ mongoose
     });
 
 const app = express();
+app.use(express.json());
 app.listen(3000,()=>{
     console.log("server is online 3000")
 })
-app.use('/api/user', userRouter);    
+app.use('/api/user', userRouter);  
+app.use('/api/auth',userSignUpRouter);  
 
