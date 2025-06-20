@@ -53,13 +53,71 @@ export const signin = async (req, res) => {
       expiresIn: "1d",
     });
 
-    const { password: _, ...rest } = validUser._doc;
+    const { password: _, ...userWithoutPassword } = validUser._doc;
 
     res
-      .cookie("access_token", token, { httpOnly: true })
+      .cookie("access_token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+      })
       .status(200)
-      .json({ success: true, user: rest });
+      .json({ success: true, user: userWithoutPassword });
   } catch (error) {
     res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+export const google = async (req, res) => {
+  try {
+    const user = await User.findOne({ email: req.body.email });
+
+    if (user) {
+      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+        expiresIn: "1d",
+      });
+      const { password: _, ...userWithoutPassword } = user._doc;
+
+      return res
+        .cookie("access_token", token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "strict",
+        })
+        .status(200)
+        .json({ success: true, user: userWithoutPassword });
+    } else {
+      const generatedPassword =
+        Math.random().toString(36).slice(-8) +
+        Math.random().toString(36).slice(-8);
+      const hashedPassword = bcryptjs.hashSync(generatedPassword, 10);
+
+      const newUser = new User({
+        username:
+          req.body.email.split("@")[0] + Math.random().toString(36).slice(-4),
+        email: req.body.email,
+        password: hashedPassword,
+        avatar: req.body.photo,
+      });
+
+      await newUser.save();
+
+      const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, {
+        expiresIn: "1d",
+      });
+
+      const { password: _, ...userWithoutPassword } = newUser._doc;
+
+      res
+        .cookie("access_token", token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "strict",
+        })
+        .status(200)
+        .json({ success: true, user: userWithoutPassword });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Google Sign-in failed" });
   }
 };
